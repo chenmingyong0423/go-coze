@@ -1,0 +1,32 @@
+name: Go
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      env:
+        YUANQI_ASSISTANT_ID: ${{ secrets.YUANQI_ASSISTANT_ID }}
+        YUANQI_USER_ID: ${{ secrets.YUANQI_USER_ID }}
+        YUANQI_TOKEN: ${{ secrets.YUANQI_TOKEN }}
+      run: go test -race -coverprofile=cover.out -v ./...
+
+    - name: Post Coverage
+      uses: codecov/codecov-action@v4

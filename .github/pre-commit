@@ -1,0 +1,9 @@
+RESULT=$(make check)
+printf "Checking in progress...\n"
+
+if [ -n "$RESULT" ]; then
+  echo >&2 "[ERROR]: One or more files have changed, please add the changed files to this submission."
+  exit 1
+fi
+
+exit 0
