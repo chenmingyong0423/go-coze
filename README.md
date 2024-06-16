@@ -33,7 +33,7 @@ go get github.com/chenmingyong0423/go-coze
 ### 非流式 API 交互
 ```go
 // 创建一个聊天对象
-chat := NewChat("botID", "user", "personalAccessToken")
+chat := coze.NewChat("botID", "user", "personalAccessToken")
 
 // 创建新的会话对象并设置会话流和类型
 session := chat.Chat(false)
@@ -49,7 +49,7 @@ resp, err := session.WithQuery("你好").
 ### 流式 API 交互
 ```go
 // 创建一个聊天对象
-chat := NewChat("botID", "user", "personalAccessToken")
+chat := coze.NewChat("botID", "user", "personalAccessToken")
 
 // 创建新的会话对象并设置会话流和类型
 session := chat.Chat(true)
