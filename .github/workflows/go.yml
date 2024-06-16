@@ -23,9 +23,9 @@ jobs:
 
     - name: Test
       env:
-        YUANQI_ASSISTANT_ID: ${{ secrets.YUANQI_ASSISTANT_ID }}
-        YUANQI_USER_ID: ${{ secrets.YUANQI_USER_ID }}
-        YUANQI_TOKEN: ${{ secrets.YUANQI_TOKEN }}
+        COZE_BOT_ID: ${{ secrets.COZE_BOT_ID }}
+        COZE_USER: ${{ secrets.COZE_USER }}
+        COZE_TOKEN: ${{ secrets.COZE_TOKEN }}
       run: go test -race -coverprofile=cover.out -v ./...
 
     - name: Post Coverage
