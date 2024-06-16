@@ -4,11 +4,11 @@
   go-coze
 </h1>
 
-[![GitHub Repo stars](https://img.shields.io/github/stars/chenmingyong0423/go-yuanqi)](https://github.com/chenmingyong0423/go-yuanqi/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/chenmingyong0423/go-yuanqi)](https://github.com/chenmingyong0423/go-yuanqi/issues)
-[![GitHub License](https://img.shields.io/github/license/chenmingyong0423/go-yuanqi)](https://github.com/chenmingyong0423/go-yuanqi/blob/main/LICENSE)
-[![GitHub release (with filter)](https://img.shields.io/github/v/release/chenmingyong0423/go-yuanqi)](https://github.com/chenmingyong0423/go-yuanqi)
-[![Go Report Card](https://goreportcard.com/badge/github.com/chenmingyong0423/go-yuanqi)](https://goreportcard.com/report/github.com/chenmingyong0423/go-yuanqi)
+[![GitHub Repo stars](https://img.shields.io/github/stars/chenmingyong0423/go-coze)](https://github.com/chenmingyong0423/go-coze/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/chenmingyong0423/go-coze)](https://github.com/chenmingyong0423/go-coze/issues)
+[![GitHub License](https://img.shields.io/github/license/chenmingyong0423/go-coze)](https://github.com/chenmingyong0423/go-coze/blob/main/LICENSE)
+[![GitHub release (with filter)](https://img.shields.io/github/v/release/chenmingyong0423/go-coze)](https://github.com/chenmingyong0423/go-coze)
+[![Go Report Card](https://goreportcard.com/badge/github.com/chenmingyong0423/go-coze)](https://goreportcard.com/report/github.com/chenmingyong0423/go-coze)
 [![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
 
 `go-coze` 库是一个用于简化 `Coze API` 调用的库，通过这个库，开发者可以更高效，更简洁地与 `Coze API` 交互，减少重复代码，提高开发效率。
