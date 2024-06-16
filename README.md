@@ -40,10 +40,10 @@ session := chat.Chat(false)
 
 // 添加请求参数并发送以及处理错误
 resp, err := session.WithQuery("你好").
-  WithConversationId("conversationId").
-  WithChatHistory(nil).
-  WithCustomVariables(nil).
-  Request(context.Background())
+    WithConversationId("conversationId").
+    WithChatHistory(nil).
+    WithCustomVariables(nil).
+    Request(context.Background())
 ```
 非流式 `API` 交互需要调用 `Request` 方法，该方法会返回一个 `NonStreamingResponse` 对象和一个 `error` 对象。
 ### 流式 API 交互
@@ -56,10 +56,10 @@ session := chat.Chat(true)
 
 // 添加请求参数并发送以及处理错误
 respChan, errChan := session.WithQuery("你好").
-  WithConversationId("conversationId").
-  WithChatHistory(nil).
-  WithCustomVariables(nil).
-  Request(context.Background())
+    WithConversationId("conversationId").
+    WithChatHistory(nil).
+    WithCustomVariables(nil).
+	StreamRequest(context.Background())
 for {
     select {
     case resp, ok := <-respChan:
