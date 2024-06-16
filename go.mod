@@ -1,4 +1,4 @@
-module ithub.com/chenmingyong0423/go-coze
+module github.com/chenmingyong0423/go-coze
 
 go 1.22.0
 
