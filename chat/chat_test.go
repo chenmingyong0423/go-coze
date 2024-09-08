@@ -235,8 +235,7 @@ func TestChat_Retrieve(t *testing.T) {
 
 func TestChat_MessageList(t *testing.T) {
 	// 创建一个聊天对象
-	//chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
-	chat := NewChat("pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP", "7330571112050343973", "7378912442585874447")
+	chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
 	// 添加请求参数并发送以及处理错误
 	resp, err := chat.WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
 		Chat(context.Background())
