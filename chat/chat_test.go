@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/chenmingyong0423/go-coze/common/request"
 
@@ -211,5 +212,47 @@ func TestSession_StreamRequest(t *testing.T) {
 				break
 			}
 		}
+	}
+}
+
+func TestChat_Retrieve(t *testing.T) {
+	// 创建一个聊天对象
+	chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
+	// 添加请求参数并发送以及处理错误
+	resp, err := chat.WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
+		Chat(context.Background())
+	require.NoError(t, err)
+	if resp.Code != 0 {
+		t.Fatal(resp.Msg)
+	}
+	resp2, err := chat.WithConversationId(resp.Data.ConversationId).Retrieve(context.Background(), resp.Data.Id)
+	require.NoError(t, err)
+	if resp2.Code != 0 {
+		t.Fatal(resp2.Msg)
+	}
+	t.Log(resp2.Data)
+}
+
+func TestChat_MessageList(t *testing.T) {
+	// 创建一个聊天对象
+	//chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
+	chat := NewChat("pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP", "7330571112050343973", "7378912442585874447")
+	// 添加请求参数并发送以及处理错误
+	resp, err := chat.WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
+		Chat(context.Background())
+	require.NoError(t, err)
+	if resp.Code != 0 {
+		t.Fatal(resp.Msg)
+	}
+	// 等待对话完成
+	time.Sleep(2 * time.Second)
+
+	resp2, err := chat.WithConversationId(resp.Data.ConversationId).MessageList(context.Background(), resp.Data.Id)
+	require.NoError(t, err)
+	if resp2.Code != 0 {
+		t.Fatal(resp2.Msg)
+	}
+	for _, message := range resp2.Data {
+		t.Log(message)
 	}
 }

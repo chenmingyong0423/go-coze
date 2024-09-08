@@ -28,6 +28,11 @@ type StreamingResponse struct {
 	Message *response.Message
 }
 
+type MessageResponse struct {
+	BaseResponse
+	Data []response.Message `json:"data"`
+}
+
 type HttpErrorResponse struct {
 	Status     string // e.g. "200 OK"
 	StatusCode int    `json:"status_code"` // http 状态码

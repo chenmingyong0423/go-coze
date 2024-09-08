@@ -12,15 +12,17 @@ import (
 	"time"
 
 	"github.com/chenmingyong0423/go-coze/common/response"
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/chenmingyong0423/go-coze/common/request"
-	jsoniter "github.com/json-iterator/go"
 )
 
 const (
 	InternationalChatUrl = "https://api.coze.com/v3/chat"
 
 	chatUrl               = "https://api.coze.cn/v3/chat"
+	retrieveUrl           = "https://api.coze.cn/v3/chat/retrieve"
+	messageListUrl        = "https://api.coze.cn/v3/chat/message/list"
 	HeaderAuthorization   = "Authorization"
 	HeaderContentType     = "Content-Type"
 	HeaderApplicationJson = "application/json"
@@ -68,6 +70,46 @@ func NewChat(authorization, userID, botID string) *Chat {
 	}
 }
 
+func (c *Chat) WithStream(stream bool) *Chat {
+	c.Stream = stream
+	return c
+}
+
+func (c *Chat) WithTimeout(timeout time.Duration) *Chat {
+	c.Timeout = timeout
+	return c
+}
+
+func (c *Chat) WithConversationId(conversationId string) *Chat {
+	c.ConversationId = conversationId
+	return c
+}
+
+func (c *Chat) AddMessages(additionalMessages ...request.EnterMessage) *Chat {
+	c.AdditionalMessages = append(c.AdditionalMessages, additionalMessages...)
+	return c
+}
+
+func (c *Chat) WithCustomVariables(customVariables map[string]any) *Chat {
+	c.CustomVariables = customVariables
+	return c
+}
+
+func (c *Chat) WithAutoSaveHistory(autoSaveHistory bool) *Chat {
+	c.AutoSaveHistory = autoSaveHistory
+	return c
+}
+
+func (c *Chat) WithMetaData(metaData map[string]any) *Chat {
+	c.MetaData = metaData
+	return c
+}
+
+func (c *Chat) WithExtraParams(extraParams []string) *Chat {
+	c.ExtraParams = extraParams
+	return c
+}
+
 func (c *Chat) Chat(ctx context.Context) (*DataResponse, error) {
 	if c.Stream {
 		return nil, fmt.Errorf("stream request not supported")
@@ -89,6 +131,7 @@ func (c *Chat) Chat(ctx context.Context) (*DataResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	u.RawQuery = params.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bytes.NewReader(body))
 	if err != nil {
@@ -152,6 +195,7 @@ func (c *Chat) StreamChat(ctx context.Context) (<-chan *StreamingResponse, <-cha
 			errChan <- err
 			return
 		}
+		u.RawQuery = params.Encode()
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bytes.NewReader(body))
 		if err != nil {
@@ -263,42 +307,116 @@ func resetStreamResponse(sr *StreamingResponse) {
 	sr.BaseResponse.Msg = ""
 }
 
-func (c *Chat) WithStream(stream bool) *Chat {
-	c.Stream = stream
-	return c
+// ResetChat 除了 BotID、UserId、Authorization、Timeout 外，其他字段均会被重置。
+// 如果你想复用该对象，建议调用该方法重置。
+func (c *Chat) ResetChat() {
+	c.ConversationId = ""
+	c.Stream = false
+	c.AdditionalMessages = nil
+	c.CustomVariables = nil
+	c.AutoSaveHistory = false
+	c.MetaData = nil
+	c.ExtraParams = nil
 }
 
-func (c *Chat) WithTimeout(timeout time.Duration) *Chat {
-	c.Timeout = timeout
-	return c
+func (c *Chat) Retrieve(ctx context.Context, chatID string) (*DataResponse, error) {
+	resp := new(DataResponse)
+
+	// 构建查询参数
+	params := url.Values{}
+	params.Add("conversation_id", c.ConversationId)
+	params.Add("chat_id", chatID)
+
+	u, err := url.Parse(retrieveUrl)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = params.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add(HeaderContentType, HeaderApplicationJson)
+	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", c.Authorization))
+
+	client := http.DefaultClient
+	if c.Timeout != 0 {
+		client.Timeout = c.Timeout
+	}
+
+	httpResp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	data, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return resp, err
+	}
+
+	if httpResp.StatusCode != http.StatusOK {
+		return nil, &HttpErrorResponse{
+			Status:     httpResp.Status,
+			StatusCode: httpResp.StatusCode,
+			Body:       data,
+		}
+	}
+	if err = jsoniter.Unmarshal(data, &resp); err != nil {
+		return resp, err
+	}
+
+	return resp, nil
 }
 
-func (c *Chat) WithConversationId(conversationId string) *Chat {
-	c.ConversationId = conversationId
-	return c
-}
+func (c *Chat) MessageList(ctx context.Context, chatID string) (*MessageResponse, error) {
+	resp := new(MessageResponse)
 
-func (c *Chat) AddMessages(additionalMessages ...request.EnterMessage) *Chat {
-	c.AdditionalMessages = append(c.AdditionalMessages, additionalMessages...)
-	return c
-}
+	// 构建查询参数
+	params := url.Values{}
+	params.Add("conversation_id", c.ConversationId)
+	params.Add("chat_id", chatID)
 
-func (c *Chat) WithCustomVariables(customVariables map[string]any) *Chat {
-	c.CustomVariables = customVariables
-	return c
-}
+	u, err := url.Parse(messageListUrl)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = params.Encode()
 
-func (c *Chat) WithAutoSaveHistory(autoSaveHistory bool) *Chat {
-	c.AutoSaveHistory = autoSaveHistory
-	return c
-}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add(HeaderContentType, HeaderApplicationJson)
+	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", c.Authorization))
 
-func (c *Chat) WithMetaData(metaData map[string]any) *Chat {
-	c.MetaData = metaData
-	return c
-}
+	client := http.DefaultClient
+	if c.Timeout != 0 {
+		client.Timeout = c.Timeout
+	}
 
-func (c *Chat) WithExtraParams(extraParams []string) *Chat {
-	c.ExtraParams = extraParams
-	return c
+	httpResp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	data, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return resp, err
+	}
+
+	if httpResp.StatusCode != http.StatusOK {
+		return nil, &HttpErrorResponse{
+			Status:     httpResp.Status,
+			StatusCode: httpResp.StatusCode,
+			Body:       data,
+		}
+	}
+	if err = jsoniter.Unmarshal(data, &resp); err != nil {
+		return resp, err
+	}
+
+	return resp, nil
 }
