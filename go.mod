@@ -1,6 +1,6 @@
 module github.com/chenmingyong0423/go-coze
 
-go 1.22.0
+go 1.18
 
 require (
 	github.com/json-iterator/go v1.1.12
