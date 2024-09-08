@@ -68,7 +68,7 @@ func NewChat(authorization, userID, botID string) *Chat {
 	}
 }
 
-func (c *Chat) Chat(ctx context.Context) (*NonStreamingResponse, error) {
+func (c *Chat) Chat(ctx context.Context) (*DataResponse, error) {
 	if c.Stream {
 		return nil, fmt.Errorf("stream request not supported")
 	}
@@ -78,7 +78,7 @@ func (c *Chat) Chat(ctx context.Context) (*NonStreamingResponse, error) {
 		return nil, err
 	}
 
-	resp := new(NonStreamingResponse)
+	resp := new(DataResponse)
 
 	// 构建查询参数
 	params := url.Values{}
@@ -199,12 +199,12 @@ func (c *Chat) StreamChat(ctx context.Context) (<-chan *StreamingResponse, <-cha
 			} else if strings.HasPrefix(line, "data:") {
 				data := strings.TrimSpace(line[len("data:"):])
 				if data == "conversation.chat.failed" {
-					var errResp Response
+					var errResp BaseResponse
 					if err = jsoniter.UnmarshalFromString(data, &errResp); err != nil {
 						errChan <- err
 						return
 					}
-					sr.Response = errResp
+					sr.BaseResponse = errResp
 					newSr := *sr
 					resetStreamResponse(sr)
 					respChan <- &newSr
@@ -233,12 +233,12 @@ func (c *Chat) StreamChat(ctx context.Context) (<-chan *StreamingResponse, <-cha
 					}
 				}
 			} else if line != "" {
-				var resp Response
+				var resp BaseResponse
 				if err = jsoniter.UnmarshalFromString(line, &resp); err != nil {
 					errChan <- err
 					return
 				}
-				sr.Response = resp
+				sr.BaseResponse = resp
 				newSr := *sr
 				resetStreamResponse(sr)
 				respChan <- &newSr
@@ -259,8 +259,8 @@ func resetStreamResponse(sr *StreamingResponse) {
 	sr.Event = ""
 	sr.Chat = nil
 	sr.Message = nil
-	sr.Response.Code = 0
-	sr.Response.Msg = ""
+	sr.BaseResponse.Code = 0
+	sr.BaseResponse.Msg = ""
 }
 
 func (c *Chat) WithStream(stream bool) *Chat {

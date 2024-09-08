@@ -6,7 +6,7 @@ import (
 	"github.com/chenmingyong0423/go-coze/common/response"
 )
 
-type Response struct {
+type BaseResponse struct {
 	// The ID of the code.
 	// 0 represents a successful call.
 	// 状态码。
@@ -16,13 +16,13 @@ type Response struct {
 	Msg string `json:"msg"`
 }
 
-type NonStreamingResponse struct {
-	Response
+type DataResponse struct {
+	BaseResponse
 	Data *response.Chat `json:"data"`
 }
 
 type StreamingResponse struct {
-	Response
+	BaseResponse
 	Event   string
 	Chat    *response.Chat
 	Message *response.Message
