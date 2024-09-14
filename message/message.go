@@ -31,17 +31,17 @@ import (
 
 const (
 	InternationalCreateUrl   = "https://api.coze.com/v1/conversation/message/create"
-	InternationalListUrl     = "https://api.coze.cn/v1/conversation/message/list"
+	InternationalListUrl     = "https://api.coze.com/v1/conversation/message/list"
 	InternationalRetrieveUrl = "https://api.coze.com/v1/conversation/message/retrieve"
-	InternationalModifyUrl   = "https://api.coze.cn/v1/conversation/message/modify"
-	InternationalDeleteUrl   = "https://api.coze.cn/v1/conversation/message/delete"
+	InternationalModifyUrl   = "https://api.coze.com/v1/conversation/message/modify"
+	InternationalDeleteUrl   = "https://api.coze.com/v1/conversation/message/delete"
 
 	createUrl             = "https://api.coze.cn/v1/conversation/message/create"
 	listUrl               = "https://api.coze.cn/v1/conversation/message/list"
 	retrieveUrl           = "https://api.coze.cn/v1/conversation/message/retrieve"
 	modifyUrl             = "https://api.coze.cn/v1/conversation/message/modify"
 	deleteUrl             = "https://api.coze.cn/v1/conversation/message/delete"
-	HeaderAuthorization   = "Authorization"
+	HeaderAuthorization   = "authorization"
 	HeaderContentType     = "Content-Type"
 	HeaderApplicationJson = "application/json"
 )
