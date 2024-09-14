@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -35,8 +36,8 @@ func TestCreateRequest_Do(t *testing.T) {
 			name:               "invalid request params for botID",
 			ctx:                context.Background(),
 			botID:              "",
-			userId:             "7330571112050343973",
-			authorization:      "pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP",
+			userId:             os.Getenv("COZE_USER_ID"),
+			authorization:      os.Getenv("COZE_TOKEN"),
 			stream:             false,
 			conversationId:     "",
 			additionalMessages: nil,
@@ -52,9 +53,9 @@ func TestCreateRequest_Do(t *testing.T) {
 		{
 			name:           "invalid request params for userId",
 			ctx:            context.Background(),
-			botID:          "7378912442585874447",
+			botID:          os.Getenv("COZE_BOT_ID"),
 			userId:         "",
-			authorization:  "pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP",
+			authorization:  os.Getenv("COZE_TOKEN"),
 			stream:         false,
 			conversationId: "",
 			additionalMessages: []request.EnterMessage{
@@ -72,8 +73,8 @@ func TestCreateRequest_Do(t *testing.T) {
 		{
 			name:           "invalid request params for token",
 			ctx:            context.Background(),
-			botID:          "7378912442585874447",
-			userId:         "7330571112050343973",
+			botID:          os.Getenv("COZE_BOT_ID"),
+			userId:         os.Getenv("COZE_USER_ID"),
 			authorization:  "",
 			stream:         false,
 			conversationId: "",
@@ -92,9 +93,9 @@ func TestCreateRequest_Do(t *testing.T) {
 		{
 			name:               "empty content",
 			ctx:                context.Background(),
-			botID:              "7378912442585874447",
-			userId:             "7330571112050343973",
-			authorization:      "pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP",
+			botID:              os.Getenv("COZE_BOT_ID"),
+			userId:             os.Getenv("COZE_USER_ID"),
+			authorization:      os.Getenv("COZE_TOKEN"),
 			stream:             false,
 			conversationId:     "",
 			additionalMessages: nil,
@@ -163,9 +164,9 @@ func TestCreateRequest_DoStream(t *testing.T) {
 		}
 	}
 	{
-		botId := "7378912442585874447"
-		userId := "7330571112050343973"
-		token := "pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP"
+		botId := os.Getenv("COZE_BOT_ID")
+		userId := os.Getenv("COZE_USER_ID")
+		token := os.Getenv("COZE_TOKEN")
 
 		chat := NewChat(token, userId, botId)
 		respChan, errChan := chat.ChatRequest().WithConversationId("").
@@ -204,7 +205,7 @@ func TestCreateRequest_DoStream(t *testing.T) {
 }
 
 func TestRetrieveRequest_Do(t *testing.T) {
-	chat := NewChat("pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP", "7330571112050343973", "7378912442585874447")
+	chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
 	resp, err := chat.ChatRequest().WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
 		Do(context.Background())
 	require.NoError(t, err)
@@ -218,7 +219,7 @@ func TestRetrieveRequest_Do(t *testing.T) {
 }
 
 func TestMessageListRequest_Do(t *testing.T) {
-	chat := NewChat("pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP", "7330571112050343973", "7378912442585874447")
+	chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
 	resp, err := chat.ChatRequest().WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
 		Do(context.Background())
 	require.NoError(t, err)
@@ -237,7 +238,7 @@ func TestMessageListRequest_Do(t *testing.T) {
 }
 
 func TestCancelRequest_Do(t *testing.T) {
-	chat := NewChat("pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP", "7330571112050343973", "7378912442585874447")
+	chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
 	resp, err := chat.ChatRequest().WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
 		Do(context.Background())
 	require.NoError(t, err)
