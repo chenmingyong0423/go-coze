@@ -130,7 +130,7 @@ func TestSession_Request(t *testing.T) {
 				WithAutoSaveHistory(tc.autoSaveHistory).
 				WithMetaData(tc.metaData).
 				WithExtraParams(tc.extraParams).
-				Chat(tc.ctx)
+				ChatRequest(tc.ctx)
 			tc.wantError(t, err)
 			if err == nil {
 				t.Log(resp)
@@ -154,7 +154,7 @@ func TestSession_StreamRequest(t *testing.T) {
 			WithAutoSaveHistory(false).
 			WithMetaData(nil).
 			WithExtraParams(nil).
-			StreamChat(context.Background())
+			StreamChatRequest(context.Background())
 		for {
 			select {
 			case resp, ok := <-respChan:
@@ -186,7 +186,7 @@ func TestSession_StreamRequest(t *testing.T) {
 			WithAutoSaveHistory(false).
 			WithMetaData(nil).
 			WithExtraParams(nil).
-			StreamChat(context.Background())
+			StreamChatRequest(context.Background())
 		for {
 			select {
 			case resp, ok := <-respChan:
@@ -220,12 +220,12 @@ func TestChat_Retrieve(t *testing.T) {
 	chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
 	// 添加请求参数并发送以及处理错误
 	resp, err := chat.WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
-		Chat(context.Background())
+		ChatRequest(context.Background())
 	require.NoError(t, err)
 	if resp.Code != 0 {
 		t.Fatal(resp.Msg)
 	}
-	resp2, err := chat.WithConversationId(resp.Data.ConversationId).Retrieve(context.Background(), resp.Data.Id)
+	resp2, err := chat.WithConversationId(resp.Data.ConversationId).RetrieveRequest(context.Background(), resp.Data.Id)
 	require.NoError(t, err)
 	if resp2.Code != 0 {
 		t.Fatal(resp2.Msg)
@@ -238,7 +238,7 @@ func TestChat_MessageList(t *testing.T) {
 	chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
 	// 添加请求参数并发送以及处理错误
 	resp, err := chat.WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
-		Chat(context.Background())
+		ChatRequest(context.Background())
 	require.NoError(t, err)
 	if resp.Code != 0 {
 		t.Fatal(resp.Msg)
@@ -246,7 +246,7 @@ func TestChat_MessageList(t *testing.T) {
 	// 等待对话完成
 	time.Sleep(2 * time.Second)
 
-	resp2, err := chat.WithConversationId(resp.Data.ConversationId).MessageList(context.Background(), resp.Data.Id)
+	resp2, err := chat.WithConversationId(resp.Data.ConversationId).MessageListRequest(context.Background(), resp.Data.Id)
 	require.NoError(t, err)
 	if resp2.Code != 0 {
 		t.Fatal(resp2.Msg)

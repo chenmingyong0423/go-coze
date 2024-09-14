@@ -33,3 +33,35 @@ type ObjectString struct {
 	// 在 type 为 file 或 image 时，file_id 和 file_url 应至少指定一个。
 	FileUrl string `json:"file_url,omitempty"`
 }
+
+type ObjectStringBuilder struct {
+	objectString ObjectString
+}
+
+func NewObjectStringBuilder() *ObjectStringBuilder {
+	return &ObjectStringBuilder{}
+}
+
+func (b *ObjectStringBuilder) Type(typ string) *ObjectStringBuilder {
+	b.objectString.Type = typ
+	return b
+}
+
+func (b *ObjectStringBuilder) Text(text string) *ObjectStringBuilder {
+	b.objectString.Text = text
+	return b
+}
+
+func (b *ObjectStringBuilder) FileId(fileId string) *ObjectStringBuilder {
+	b.objectString.FileId = fileId
+	return b
+}
+
+func (b *ObjectStringBuilder) FileUrl(fileUrl string) *ObjectStringBuilder {
+	b.objectString.FileUrl = fileUrl
+	return b
+}
+
+func (b *ObjectStringBuilder) Build() ObjectString {
+	return b.objectString
+}
