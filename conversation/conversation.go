@@ -18,13 +18,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/chenmingyong0423/go-coze/common/request"
-	"github.com/chenmingyong0423/go-coze/common/response"
-	jsoniter "github.com/json-iterator/go"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/chenmingyong0423/go-coze/common/request"
+	"github.com/chenmingyong0423/go-coze/common/response"
+	jsoniter "github.com/json-iterator/go"
 )
 
 const (

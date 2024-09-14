@@ -17,12 +17,13 @@ package conversation
 import (
 	"context"
 	"errors"
-	"github.com/chenmingyong0423/go-coze/common/request"
-	"github.com/chenmingyong0423/go-coze/common/response"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/chenmingyong0423/go-coze/common/request"
+	"github.com/chenmingyong0423/go-coze/common/response"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConversation_CreateRequest(t *testing.T) {
