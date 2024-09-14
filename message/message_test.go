@@ -368,7 +368,7 @@ func TestModifyRequest_Do(t *testing.T) {
 }
 
 func TestDeleteRequest_Do(t *testing.T) {
-	resp, err := NewMessage("pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP", "7414413032111063080").ListRequest().Do(context.Background())
+	resp, err := NewMessage(os.Getenv("COZE_TOKEN"), "7414413032111063080").ListRequest().Do(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	require.NotNil(t, resp.Data)
@@ -404,7 +404,7 @@ func TestDeleteRequest_Do(t *testing.T) {
 		{
 			name:           "empty conversationId",
 			ctx:            context.Background(),
-			authorization:  "pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP",
+			authorization:  os.Getenv("COZE_TOKEN"),
 			conversationId: "",
 			messageId:      messageId,
 			want: func(t *testing.T, resp *response.DataResponse[response.Message]) {
@@ -414,7 +414,7 @@ func TestDeleteRequest_Do(t *testing.T) {
 		{
 			name:           "empty messageId",
 			ctx:            context.Background(),
-			authorization:  "pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP",
+			authorization:  os.Getenv("COZE_TOKEN"),
 			conversationId: "7414413032111063080",
 			messageId:      "",
 			want: func(t *testing.T, resp *response.DataResponse[response.Message]) {
@@ -424,7 +424,7 @@ func TestDeleteRequest_Do(t *testing.T) {
 		{
 			name:           "success",
 			ctx:            context.Background(),
-			authorization:  "pat_MPmFilLOZIU1VsXa6bC4mrUCyFIULmaxpYIaRRWe1I77n96dLIVfwW5ucGKt5kqP",
+			authorization:  os.Getenv("COZE_TOKEN"),
 			conversationId: "7414413032111063080",
 			messageId:      messageId,
 			want: func(t *testing.T, resp *response.DataResponse[response.Message]) {
