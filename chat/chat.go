@@ -18,7 +18,9 @@ import (
 )
 
 const (
-	InternationalChatUrl = "https://api.coze.com/v3/chat"
+	InternationalChatUrl        = "https://api.coze.com/v3/chat"
+	InternationalRetrieveUrl    = "https://api.coze.com/v3/chat/retrieve"
+	InternationalMessageListUrl = "https://api.coze.com/v3/chat/message/list"
 
 	chatUrl               = "https://api.coze.cn/v3/chat"
 	retrieveUrl           = "https://api.coze.cn/v3/chat/retrieve"
@@ -110,7 +112,7 @@ func (c *Chat) WithExtraParams(extraParams []string) *Chat {
 	return c
 }
 
-func (c *Chat) Chat(ctx context.Context) (*DataResponse, error) {
+func (c *Chat) ChatRequest(ctx context.Context) (*response.DataResponse[*response.Chat], error) {
 	if c.Stream {
 		return nil, fmt.Errorf("stream request not supported")
 	}
@@ -120,7 +122,7 @@ func (c *Chat) Chat(ctx context.Context) (*DataResponse, error) {
 		return nil, err
 	}
 
-	resp := new(DataResponse)
+	resp := new(response.DataResponse[*response.Chat])
 
 	// 构建查询参数
 	params := url.Values{}
@@ -157,7 +159,7 @@ func (c *Chat) Chat(ctx context.Context) (*DataResponse, error) {
 	}
 
 	if httpResp.StatusCode != http.StatusOK {
-		return nil, &HttpErrorResponse{
+		return nil, &response.HttpErrorResponse{
 			Status:     httpResp.Status,
 			StatusCode: httpResp.StatusCode,
 			Body:       data,
@@ -170,7 +172,7 @@ func (c *Chat) Chat(ctx context.Context) (*DataResponse, error) {
 	return resp, nil
 }
 
-func (c *Chat) StreamChat(ctx context.Context) (<-chan *StreamingResponse, <-chan error) {
+func (c *Chat) StreamChatRequest(ctx context.Context) (<-chan *StreamingResponse, <-chan error) {
 	// 创建返回的通道
 	respChan := make(chan *StreamingResponse)
 	errChan := make(chan error)
@@ -219,7 +221,7 @@ func (c *Chat) StreamChat(ctx context.Context) (<-chan *StreamingResponse, <-cha
 
 		if httpResp.StatusCode != http.StatusOK {
 			data, _ := io.ReadAll(httpResp.Body)
-			errChan <- &HttpErrorResponse{
+			errChan <- &response.HttpErrorResponse{
 				Status:     httpResp.Status,
 				StatusCode: httpResp.StatusCode,
 				Body:       data,
@@ -243,7 +245,7 @@ func (c *Chat) StreamChat(ctx context.Context) (<-chan *StreamingResponse, <-cha
 			} else if strings.HasPrefix(line, "data:") {
 				data := strings.TrimSpace(line[len("data:"):])
 				if data == "conversation.chat.failed" {
-					var errResp BaseResponse
+					var errResp response.BaseResponse
 					if err = jsoniter.UnmarshalFromString(data, &errResp); err != nil {
 						errChan <- err
 						return
@@ -277,7 +279,7 @@ func (c *Chat) StreamChat(ctx context.Context) (<-chan *StreamingResponse, <-cha
 					}
 				}
 			} else if line != "" {
-				var resp BaseResponse
+				var resp response.BaseResponse
 				if err = jsoniter.UnmarshalFromString(line, &resp); err != nil {
 					errChan <- err
 					return
@@ -319,8 +321,8 @@ func (c *Chat) ResetChat() {
 	c.ExtraParams = nil
 }
 
-func (c *Chat) Retrieve(ctx context.Context, chatID string) (*DataResponse, error) {
-	resp := new(DataResponse)
+func (c *Chat) RetrieveRequest(ctx context.Context, chatID string) (*response.DataResponse[*response.Chat], error) {
+	resp := new(response.DataResponse[*response.Chat])
 
 	// 构建查询参数
 	params := url.Values{}
@@ -357,7 +359,7 @@ func (c *Chat) Retrieve(ctx context.Context, chatID string) (*DataResponse, erro
 	}
 
 	if httpResp.StatusCode != http.StatusOK {
-		return nil, &HttpErrorResponse{
+		return nil, &response.HttpErrorResponse{
 			Status:     httpResp.Status,
 			StatusCode: httpResp.StatusCode,
 			Body:       data,
@@ -370,8 +372,9 @@ func (c *Chat) Retrieve(ctx context.Context, chatID string) (*DataResponse, erro
 	return resp, nil
 }
 
-func (c *Chat) MessageList(ctx context.Context, chatID string) (*MessageResponse, error) {
-	resp := new(MessageResponse)
+func (c *Chat) MessageListRequest(ctx context.Context, chatID string) (*response.DataResponse[[]response.Message], error) {
+	resp := new(response.DataResponse[[]response.Message])
+	resp.Data = make([]response.Message, 0)
 
 	// 构建查询参数
 	params := url.Values{}
@@ -408,7 +411,7 @@ func (c *Chat) MessageList(ctx context.Context, chatID string) (*MessageResponse
 	}
 
 	if httpResp.StatusCode != http.StatusOK {
-		return nil, &HttpErrorResponse{
+		return nil, &response.HttpErrorResponse{
 			Status:     httpResp.Status,
 			StatusCode: httpResp.StatusCode,
 			Body:       data,
