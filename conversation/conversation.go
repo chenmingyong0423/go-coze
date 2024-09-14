@@ -34,7 +34,7 @@ const (
 
 	createUrl             = "https://api.coze.cn/v1/conversation/create"
 	retrieveUrl           = "https://api.coze.cn/v1/conversation/retrieve"
-	HeaderAuthorization   = "Authorization"
+	HeaderAuthorization   = "authorization"
 	HeaderContentType     = "Content-Type"
 	HeaderApplicationJson = "application/json"
 )

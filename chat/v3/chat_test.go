@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenmingyong0423/go-coze/common/response"
+
 	"github.com/chenmingyong0423/go-coze/common/request"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestSession_Request(t *testing.T) {
-
+func TestCreateRequest_Do(t *testing.T) {
 	testCases := []struct {
 		name          string
 		ctx           context.Context
@@ -28,8 +29,8 @@ func TestSession_Request(t *testing.T) {
 		metaData           map[string]any
 		extraParams        []string
 
-		wantError require.ErrorAssertionFunc
-		wantCode  int
+		wantErrorFunc require.ErrorAssertionFunc
+		wantFunc      func(t *testing.T, resp *response.DataResponse[*response.Chat])
 	}{
 		{
 			name:               "invalid request params for botID",
@@ -44,8 +45,10 @@ func TestSession_Request(t *testing.T) {
 			autoSaveHistory:    false,
 			metaData:           nil,
 			extraParams:        nil,
-			wantError:          require.NoError,
-			wantCode:           4006,
+			wantFunc: func(t *testing.T, resp *response.DataResponse[*response.Chat]) {
+				require.NotNil(t, resp)
+				require.Equal(t, 4006, resp.Code)
+			},
 		},
 		{
 			name:           "invalid request params for userId",
@@ -62,8 +65,10 @@ func TestSession_Request(t *testing.T) {
 			autoSaveHistory: false,
 			metaData:        nil,
 			extraParams:     nil,
-			wantError:       require.NoError,
-			wantCode:        4000,
+			wantFunc: func(t *testing.T, resp *response.DataResponse[*response.Chat]) {
+				require.NotNil(t, resp)
+				require.Equal(t, 4000, resp.Code)
+			},
 		},
 		{
 			name:           "invalid request params for token",
@@ -80,8 +85,10 @@ func TestSession_Request(t *testing.T) {
 			autoSaveHistory: false,
 			metaData:        nil,
 			extraParams:     nil,
-			wantError:       require.NoError,
-			wantCode:        4100,
+			wantFunc: func(t *testing.T, resp *response.DataResponse[*response.Chat]) {
+				require.NotNil(t, resp)
+				require.Equal(t, 4100, resp.Code)
+			},
 		},
 		{
 			name:               "empty content",
@@ -96,65 +103,48 @@ func TestSession_Request(t *testing.T) {
 			autoSaveHistory:    false,
 			metaData:           nil,
 			extraParams:        nil,
-			wantError:          require.NoError,
-			wantCode:           0,
-		},
-		{
-			name:           "empty content",
-			ctx:            context.Background(),
-			botID:          os.Getenv("COZE_BOT_ID"),
-			userId:         os.Getenv("COZE_USER_ID"),
-			authorization:  os.Getenv("COZE_TOKEN"),
-			stream:         false,
-			conversationId: "",
-			additionalMessages: []request.EnterMessage{
-				request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build(),
+			wantErrorFunc:      require.NoError,
+			wantFunc: func(t *testing.T, resp *response.DataResponse[*response.Chat]) {
+				require.NotNil(t, resp)
+				require.Equal(t, 0, resp.Code)
 			},
-			customVariables: nil,
-			autoSaveHistory: false,
-			metaData:        nil,
-			extraParams:     nil,
-			wantError:       require.NoError,
-			wantCode:        0,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// 创建一个聊天对象
 			chat := NewChat(tc.authorization, tc.userId, tc.botID)
 
-			// 添加请求参数并发送以及处理错误
-			resp, err := chat.WithConversationId(tc.conversationId).
+			got, err := chat.ChatRequest().WithConversationId(tc.conversationId).
 				AddMessages(tc.additionalMessages...).
 				WithCustomVariables(tc.customVariables).
 				WithAutoSaveHistory(tc.autoSaveHistory).
 				WithMetaData(tc.metaData).
 				WithExtraParams(tc.extraParams).
-				ChatRequest(tc.ctx)
-			tc.wantError(t, err)
-			if err == nil {
-				t.Log(resp)
-				if resp.Data != nil {
-					t.Log(resp.Data)
-				}
-				require.Equal(t, tc.wantCode, resp.Code)
+				Do(tc.ctx)
+			if err != nil {
+				t.Log(err)
+				require.NotNil(t, tc.wantErrorFunc)
+				tc.wantErrorFunc(t, err)
+			}
+			if tc.wantFunc != nil {
+				t.Log(got)
+				tc.wantFunc(t, got)
 			}
 		})
 	}
 }
 
-func TestSession_StreamRequest(t *testing.T) {
+func TestCreateRequest_DoStream(t *testing.T) {
 	{
-		// 创建一个聊天对象
 		chat := NewChat("", "", "")
 
-		respChan, errChan := chat.WithStream(true).WithConversationId("").
+		respChan, errChan := chat.ChatRequest().WithConversationId("").
 			AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
 			WithCustomVariables(nil).
 			WithAutoSaveHistory(false).
 			WithMetaData(nil).
 			WithExtraParams(nil).
-			StreamChatRequest(context.Background())
+			DoStream(context.Background())
 		for {
 			select {
 			case resp, ok := <-respChan:
@@ -174,19 +164,18 @@ func TestSession_StreamRequest(t *testing.T) {
 		}
 	}
 	{
-		// 正常请求
 		botId := os.Getenv("COZE_BOT_ID")
 		userId := os.Getenv("COZE_USER_ID")
 		token := os.Getenv("COZE_TOKEN")
 
 		chat := NewChat(token, userId, botId)
-		respChan, errChan := chat.WithStream(true).WithConversationId("").
+		respChan, errChan := chat.ChatRequest().WithConversationId("").
 			AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
 			WithCustomVariables(nil).
 			WithAutoSaveHistory(false).
 			WithMetaData(nil).
 			WithExtraParams(nil).
-			StreamChatRequest(context.Background())
+			DoStream(context.Background())
 		for {
 			select {
 			case resp, ok := <-respChan:
@@ -215,43 +204,50 @@ func TestSession_StreamRequest(t *testing.T) {
 	}
 }
 
-func TestChat_Retrieve(t *testing.T) {
-	// 创建一个聊天对象
+func TestRetrieveRequest_Do(t *testing.T) {
 	chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
-	// 添加请求参数并发送以及处理错误
-	resp, err := chat.WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
-		ChatRequest(context.Background())
+	resp, err := chat.ChatRequest().WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
+		Do(context.Background())
 	require.NoError(t, err)
-	if resp.Code != 0 {
-		t.Fatal(resp.Msg)
-	}
-	resp2, err := chat.WithConversationId(resp.Data.ConversationId).RetrieveRequest(context.Background(), resp.Data.Id)
+	t.Log(resp)
+	require.Equal(t, 0, resp.Code)
+	resp2, err := chat.RetrieveRequest(resp.Data.ConversationId).Do(context.Background(), resp.Data.Id)
 	require.NoError(t, err)
-	if resp2.Code != 0 {
-		t.Fatal(resp2.Msg)
-	}
+	require.Equal(t, 0, resp.Code)
+	require.NotNil(t, resp2)
 	t.Log(resp2.Data)
 }
 
-func TestChat_MessageList(t *testing.T) {
-	// 创建一个聊天对象
+func TestMessageListRequest_Do(t *testing.T) {
 	chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
-	// 添加请求参数并发送以及处理错误
-	resp, err := chat.WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
-		ChatRequest(context.Background())
+	resp, err := chat.ChatRequest().WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
+		Do(context.Background())
 	require.NoError(t, err)
-	if resp.Code != 0 {
-		t.Fatal(resp.Msg)
-	}
+	t.Log(resp)
+	require.Equal(t, 0, resp.Code)
 	// 等待对话完成
 	time.Sleep(2 * time.Second)
 
-	resp2, err := chat.WithConversationId(resp.Data.ConversationId).MessageListRequest(context.Background(), resp.Data.Id)
+	resp2, err := chat.MessageListRequest(resp.Data.ConversationId).Do(context.Background(), resp.Data.Id)
 	require.NoError(t, err)
-	if resp2.Code != 0 {
-		t.Fatal(resp2.Msg)
-	}
+	t.Log(resp2)
+	require.Equal(t, 0, resp2.Code)
 	for _, message := range resp2.Data {
 		t.Log(message)
 	}
+}
+
+func TestCancelRequest_Do(t *testing.T) {
+	chat := NewChat(os.Getenv("COZE_TOKEN"), os.Getenv("COZE_USER_ID"), os.Getenv("COZE_BOT_ID"))
+	resp, err := chat.ChatRequest().WithAutoSaveHistory(true).AddMessages(request.NewEnterMessageBuilder().Role("user").Content("你好").ContentType("text").Build()).
+		Do(context.Background())
+	require.NoError(t, err)
+	t.Log(resp)
+	require.Equal(t, 0, resp.Code)
+
+	resp2, err := chat.CancelRequest(resp.Data.ConversationId).Do(context.Background(), resp.Data.Id)
+	require.NoError(t, err)
+	require.Equal(t, 0, resp.Code)
+	require.NotNil(t, resp2)
+	t.Log(resp2.Data)
 }

@@ -21,24 +21,71 @@ const (
 	InternationalChatUrl        = "https://api.coze.com/v3/chat"
 	InternationalRetrieveUrl    = "https://api.coze.com/v3/chat/retrieve"
 	InternationalMessageListUrl = "https://api.coze.com/v3/chat/message/list"
+	InternationalCancelUrl      = "https://api.coze.com/v3/chat/cancel"
 
 	chatUrl               = "https://api.coze.cn/v3/chat"
 	retrieveUrl           = "https://api.coze.cn/v3/chat/retrieve"
 	messageListUrl        = "https://api.coze.cn/v3/chat/message/list"
-	HeaderAuthorization   = "Authorization"
+	cancelUrl             = "https://api.coze.cn/v3/chat/cancel"
+	HeaderAuthorization   = "authorization"
 	HeaderContentType     = "Content-Type"
 	HeaderApplicationJson = "application/json"
 )
 
 type Chat struct {
-	BotID         string        `json:"bot_id"`
-	UserId        string        `json:"user_id"`
-	Authorization string        `json:"-"`
-	Timeout       time.Duration `json:"-"`
+	botID         string
+	userId        string
+	authorization string
+}
+
+func NewChat(authorization, userID, botID string) *Chat {
+	return &Chat{
+		botID:         botID,
+		userId:        userID,
+		authorization: authorization,
+	}
+}
+
+func (c *Chat) ChatRequest() *CreateRequest {
+	return &CreateRequest{
+		BotID:  c.botID,
+		UserId: c.userId,
+		chat:   c,
+		Stream: false,
+	}
+}
+
+func (c *Chat) RetrieveRequest(conversationId string) *RetrieveRequest {
+	return &RetrieveRequest{
+		chat:           c,
+		conversationId: conversationId,
+	}
+}
+
+func (c *Chat) MessageListRequest(conversationId string) *MessageListRequest {
+	return &MessageListRequest{
+		chat:           c,
+		conversationId: conversationId,
+	}
+}
+
+func (c *Chat) CancelRequest(conversationId string) *CancelRequest {
+	return &CancelRequest{
+		chat:           c,
+		conversationId: conversationId,
+	}
+}
+
+type CreateRequest struct {
+	chat    *Chat
+	timeout time.Duration
 
 	// Optional: Indicate which conversation the dialog is taking place in.
 	// 可选的：标识对话发生在哪一次会话中，使用方自行维护此字段。
-	ConversationId string `json:"-"`
+	conversationId string
+
+	BotID  string `json:"bot_id"`
+	UserId string `json:"user_id"`
 
 	// Whether to stream the response to the client.
 	// 使用启用流式返回。
@@ -64,60 +111,45 @@ type Chat struct {
 	ExtraParams []string `json:"extra_params,omitempty"`
 }
 
-func NewChat(authorization, userID, botID string) *Chat {
-	return &Chat{
-		BotID:         botID,
-		UserId:        userID,
-		Authorization: authorization,
-	}
+func (r *CreateRequest) WithTimeout(timeout time.Duration) *CreateRequest {
+	r.timeout = timeout
+	return r
 }
 
-func (c *Chat) WithStream(stream bool) *Chat {
-	c.Stream = stream
-	return c
+func (r *CreateRequest) WithConversationId(conversationId string) *CreateRequest {
+	r.conversationId = conversationId
+	return r
 }
 
-func (c *Chat) WithTimeout(timeout time.Duration) *Chat {
-	c.Timeout = timeout
-	return c
+func (r *CreateRequest) AddMessages(additionalMessages ...request.EnterMessage) *CreateRequest {
+	r.AdditionalMessages = append(r.AdditionalMessages, additionalMessages...)
+	return r
 }
 
-func (c *Chat) WithConversationId(conversationId string) *Chat {
-	c.ConversationId = conversationId
-	return c
+func (r *CreateRequest) WithCustomVariables(customVariables map[string]any) *CreateRequest {
+	r.CustomVariables = customVariables
+	return r
 }
 
-func (c *Chat) AddMessages(additionalMessages ...request.EnterMessage) *Chat {
-	c.AdditionalMessages = append(c.AdditionalMessages, additionalMessages...)
-	return c
+func (r *CreateRequest) WithAutoSaveHistory(autoSaveHistory bool) *CreateRequest {
+	r.AutoSaveHistory = autoSaveHistory
+	return r
 }
 
-func (c *Chat) WithCustomVariables(customVariables map[string]any) *Chat {
-	c.CustomVariables = customVariables
-	return c
+func (r *CreateRequest) WithMetaData(metaData map[string]any) *CreateRequest {
+	r.MetaData = metaData
+	return r
 }
 
-func (c *Chat) WithAutoSaveHistory(autoSaveHistory bool) *Chat {
-	c.AutoSaveHistory = autoSaveHistory
-	return c
+func (r *CreateRequest) WithExtraParams(extraParams []string) *CreateRequest {
+	r.ExtraParams = extraParams
+	return r
 }
 
-func (c *Chat) WithMetaData(metaData map[string]any) *Chat {
-	c.MetaData = metaData
-	return c
-}
+func (r *CreateRequest) Do(ctx context.Context) (*response.DataResponse[*response.Chat], error) {
+	r.Stream = false
 
-func (c *Chat) WithExtraParams(extraParams []string) *Chat {
-	c.ExtraParams = extraParams
-	return c
-}
-
-func (c *Chat) ChatRequest(ctx context.Context) (*response.DataResponse[*response.Chat], error) {
-	if c.Stream {
-		return nil, fmt.Errorf("stream request not supported")
-	}
-
-	body, err := jsoniter.Marshal(c)
+	body, err := jsoniter.Marshal(r)
 	if err != nil {
 		return nil, err
 	}
@@ -126,8 +158,8 @@ func (c *Chat) ChatRequest(ctx context.Context) (*response.DataResponse[*respons
 
 	// 构建查询参数
 	params := url.Values{}
-	if c.ConversationId != "" {
-		params.Add("conversation_id", c.ConversationId)
+	if r.conversationId != "" {
+		params.Add("conversation_id", r.conversationId)
 	}
 	u, err := url.Parse(chatUrl)
 	if err != nil {
@@ -140,11 +172,11 @@ func (c *Chat) ChatRequest(ctx context.Context) (*response.DataResponse[*respons
 		return nil, err
 	}
 	req.Header.Add(HeaderContentType, HeaderApplicationJson)
-	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", c.Authorization))
+	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", r.chat.authorization))
 
 	client := http.DefaultClient
-	if c.Timeout != 0 {
-		client.Timeout = c.Timeout
+	if r.timeout != 0 {
+		client.Timeout = r.timeout
 	}
 
 	httpResp, err := client.Do(req)
@@ -172,8 +204,8 @@ func (c *Chat) ChatRequest(ctx context.Context) (*response.DataResponse[*respons
 	return resp, nil
 }
 
-func (c *Chat) StreamChatRequest(ctx context.Context) (<-chan *StreamingResponse, <-chan error) {
-	// 创建返回的通道
+func (r *CreateRequest) DoStream(ctx context.Context) (<-chan *StreamingResponse, <-chan error) {
+	r.Stream = true
 	respChan := make(chan *StreamingResponse)
 	errChan := make(chan error)
 
@@ -181,16 +213,15 @@ func (c *Chat) StreamChatRequest(ctx context.Context) (<-chan *StreamingResponse
 		defer close(respChan)
 		defer close(errChan)
 
-		body, err := jsoniter.Marshal(c)
+		body, err := jsoniter.Marshal(r)
 		if err != nil {
 			errChan <- err
 			return
 		}
 
-		// 构建查询参数
 		params := url.Values{}
-		if c.ConversationId != "" {
-			params.Add("conversation_id", c.ConversationId)
+		if r.conversationId != "" {
+			params.Add("conversation_id", r.conversationId)
 		}
 		u, err := url.Parse(chatUrl)
 		if err != nil {
@@ -205,11 +236,11 @@ func (c *Chat) StreamChatRequest(ctx context.Context) (<-chan *StreamingResponse
 			return
 		}
 		req.Header.Add(HeaderContentType, HeaderApplicationJson)
-		req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", c.Authorization))
+		req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", r.chat.authorization))
 
 		client := http.DefaultClient
-		if c.Timeout != 0 {
-			client.Timeout = c.Timeout
+		if r.timeout != 0 {
+			client.Timeout = r.timeout
 		}
 
 		httpResp, err := client.Do(req)
@@ -301,6 +332,16 @@ func (c *Chat) StreamChatRequest(ctx context.Context) (<-chan *StreamingResponse
 	return respChan, errChan
 }
 
+// Reset 如果你想复用该对象，建议调用该方法重置。
+func (r *CreateRequest) Reset() {
+	r.Stream = false
+	r.AdditionalMessages = nil
+	r.CustomVariables = nil
+	r.AutoSaveHistory = false
+	r.MetaData = nil
+	r.ExtraParams = nil
+}
+
 func resetStreamResponse(sr *StreamingResponse) {
 	sr.Event = ""
 	sr.Chat = nil
@@ -309,25 +350,24 @@ func resetStreamResponse(sr *StreamingResponse) {
 	sr.BaseResponse.Msg = ""
 }
 
-// ResetChat 除了 BotID、UserId、Authorization、Timeout 外，其他字段均会被重置。
-// 如果你想复用该对象，建议调用该方法重置。
-func (c *Chat) ResetChat() {
-	c.ConversationId = ""
-	c.Stream = false
-	c.AdditionalMessages = nil
-	c.CustomVariables = nil
-	c.AutoSaveHistory = false
-	c.MetaData = nil
-	c.ExtraParams = nil
+type RetrieveRequest struct {
+	chat    *Chat
+	timeout time.Duration
+
+	conversationId string
 }
 
-func (c *Chat) RetrieveRequest(ctx context.Context, chatID string) (*response.DataResponse[*response.Chat], error) {
+func (r *RetrieveRequest) WithTimeout(timeout time.Duration) *RetrieveRequest {
+	r.timeout = timeout
+	return r
+}
+
+func (r *RetrieveRequest) Do(ctx context.Context, chatId string) (*response.DataResponse[*response.Chat], error) {
 	resp := new(response.DataResponse[*response.Chat])
 
-	// 构建查询参数
 	params := url.Values{}
-	params.Add("conversation_id", c.ConversationId)
-	params.Add("chat_id", chatID)
+	params.Add("conversation_id", r.conversationId)
+	params.Add("chat_id", chatId)
 
 	u, err := url.Parse(retrieveUrl)
 	if err != nil {
@@ -340,11 +380,11 @@ func (c *Chat) RetrieveRequest(ctx context.Context, chatID string) (*response.Da
 		return nil, err
 	}
 	req.Header.Add(HeaderContentType, HeaderApplicationJson)
-	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", c.Authorization))
+	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", r.chat.authorization))
 
 	client := http.DefaultClient
-	if c.Timeout != 0 {
-		client.Timeout = c.Timeout
+	if r.timeout != 0 {
+		client.Timeout = r.timeout
 	}
 
 	httpResp, err := client.Do(req)
@@ -372,14 +412,26 @@ func (c *Chat) RetrieveRequest(ctx context.Context, chatID string) (*response.Da
 	return resp, nil
 }
 
-func (c *Chat) MessageListRequest(ctx context.Context, chatID string) (*response.DataResponse[[]response.Message], error) {
+type MessageListRequest struct {
+	chat    *Chat
+	timeout time.Duration
+
+	conversationId string
+}
+
+func (r *MessageListRequest) WithTimeout(timeout time.Duration) *MessageListRequest {
+	r.timeout = timeout
+	return r
+}
+
+func (r *MessageListRequest) Do(ctx context.Context, chatId string) (*response.DataResponse[[]response.Message], error) {
 	resp := new(response.DataResponse[[]response.Message])
 	resp.Data = make([]response.Message, 0)
 
 	// 构建查询参数
 	params := url.Values{}
-	params.Add("conversation_id", c.ConversationId)
-	params.Add("chat_id", chatID)
+	params.Add("conversation_id", r.conversationId)
+	params.Add("chat_id", chatId)
 
 	u, err := url.Parse(messageListUrl)
 	if err != nil {
@@ -392,11 +444,73 @@ func (c *Chat) MessageListRequest(ctx context.Context, chatID string) (*response
 		return nil, err
 	}
 	req.Header.Add(HeaderContentType, HeaderApplicationJson)
-	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", c.Authorization))
+	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", r.chat.authorization))
 
 	client := http.DefaultClient
-	if c.Timeout != 0 {
-		client.Timeout = c.Timeout
+	if r.timeout != 0 {
+		client.Timeout = r.timeout
+	}
+
+	httpResp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	data, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return resp, err
+	}
+
+	if httpResp.StatusCode != http.StatusOK {
+		return nil, &response.HttpErrorResponse{
+			Status:     httpResp.Status,
+			StatusCode: httpResp.StatusCode,
+			Body:       data,
+		}
+	}
+	if err = jsoniter.Unmarshal(data, &resp); err != nil {
+		return resp, err
+	}
+
+	return resp, nil
+}
+
+type CancelRequest struct {
+	chat    *Chat
+	timeout time.Duration
+
+	conversationId string
+}
+
+func (r *CancelRequest) WithTimeout(timeout time.Duration) *CancelRequest {
+	r.timeout = timeout
+	return r
+}
+
+func (r *CancelRequest) Do(ctx context.Context, chatId string) (*response.DataResponse[*response.Chat], error) {
+	resp := new(response.DataResponse[*response.Chat])
+
+	params := url.Values{}
+	params.Add("conversation_id", r.conversationId)
+	params.Add("chat_id", chatId)
+
+	u, err := url.Parse(cancelUrl)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = params.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add(HeaderContentType, HeaderApplicationJson)
+	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", r.chat.authorization))
+
+	client := http.DefaultClient
+	if r.timeout != 0 {
+		client.Timeout = r.timeout
 	}
 
 	httpResp, err := client.Do(req)
