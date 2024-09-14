@@ -26,8 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConversation_CreateRequest(t *testing.T) {
-
+func TestCreateRequest_Do(t *testing.T) {
 	tests := []struct {
 		name          string
 		ctx           context.Context
@@ -66,8 +65,8 @@ func TestConversation_CreateRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := NewConversation(tt.authorization).WithMetaData(tt.metaData).WithTimeout(tt.timeout).WithMessages(tt.messages...)
-			got, err := c.CreateRequest(tt.ctx)
+			c := NewConversation(tt.authorization).CreateRequest().WithMetaData(tt.metaData).WithTimeout(tt.timeout).WithMessages(tt.messages...)
+			got, err := c.Do(tt.ctx)
 			if err != nil {
 				t.Log(err)
 				require.NotNil(t, tt.wantErr)
@@ -80,12 +79,12 @@ func TestConversation_CreateRequest(t *testing.T) {
 	}
 }
 
-func TestConversation_RetrieveRequest(t *testing.T) {
+func TestRetrieveRequest_Do(t *testing.T) {
 	conversation := NewConversation(os.Getenv("COZE_TOKEN"))
-	createResp, err := conversation.CreateRequest(context.Background())
+	createResp, err := conversation.CreateRequest().Do(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, createResp.Data)
-	retrieveResp, err := conversation.RetrieveRequest(context.Background(), createResp.Data.Id)
+	retrieveResp, err := conversation.RetrieveRequest().Do(context.Background(), createResp.Data.Id)
 	require.NoError(t, err)
 	require.Equal(t, retrieveResp.Data, createResp.Data)
 }

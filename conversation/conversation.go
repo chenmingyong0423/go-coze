@@ -40,33 +40,50 @@ const (
 )
 
 type Conversation struct {
-	Authorization string                 `json:"-"`
-	Timeout       time.Duration          `json:"-"`
-	Messages      []request.EnterMessage `json:"messages,omitempty"`
-	MetaData      map[string]any         `json:"meta_data,omitempty"`
+	authorization string
 }
 
 func NewConversation(authorization string) *Conversation {
-	return &Conversation{Authorization: authorization}
+	return &Conversation{authorization: authorization}
 }
 
-func (c *Conversation) WithMessages(messages ...request.EnterMessage) *Conversation {
-	c.Messages = append(c.Messages, messages...)
-	return c
+func (c *Conversation) CreateRequest() *CreateRequest {
+	return &CreateRequest{
+		conversation: c,
+	}
 }
 
-func (c *Conversation) WithMetaData(metaData map[string]any) *Conversation {
-	c.MetaData = metaData
-	return c
+func (c *Conversation) RetrieveRequest() *RetrieveRequest {
+	return &RetrieveRequest{
+		conversation: c,
+	}
 }
 
-func (c *Conversation) WithTimeout(timeout time.Duration) *Conversation {
-	c.Timeout = timeout
-	return c
+type CreateRequest struct {
+	conversation *Conversation
+
+	timeout  time.Duration
+	Messages []request.EnterMessage `json:"messages,omitempty"`
+	MetaData map[string]any         `json:"meta_data,omitempty"`
 }
 
-func (c *Conversation) CreateRequest(ctx context.Context) (*response.DataResponse[response.Conversation], error) {
-	body, err := jsoniter.Marshal(c)
+func (r *CreateRequest) WithMessages(messages ...request.EnterMessage) *CreateRequest {
+	r.Messages = append(r.Messages, messages...)
+	return r
+}
+
+func (r *CreateRequest) WithMetaData(metaData map[string]any) *CreateRequest {
+	r.MetaData = metaData
+	return r
+}
+
+func (r *CreateRequest) WithTimeout(timeout time.Duration) *CreateRequest {
+	r.timeout = timeout
+	return r
+}
+
+func (r *CreateRequest) Do(ctx context.Context) (*response.DataResponse[response.Conversation], error) {
+	body, err := jsoniter.Marshal(r)
 	if err != nil {
 		return nil, err
 	}
@@ -78,11 +95,11 @@ func (c *Conversation) CreateRequest(ctx context.Context) (*response.DataRespons
 		return nil, err
 	}
 	req.Header.Add(HeaderContentType, HeaderApplicationJson)
-	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", c.Authorization))
+	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", r.conversation.authorization))
 
 	client := http.DefaultClient
-	if c.Timeout != 0 {
-		client.Timeout = c.Timeout
+	if r.timeout != 0 {
+		client.Timeout = r.timeout
 	}
 
 	httpResp, err := client.Do(req)
@@ -110,7 +127,18 @@ func (c *Conversation) CreateRequest(ctx context.Context) (*response.DataRespons
 	return resp, nil
 }
 
-func (c *Conversation) RetrieveRequest(ctx context.Context, conversation string) (*response.DataResponse[response.Conversation], error) {
+type RetrieveRequest struct {
+	conversation *Conversation
+
+	timeout time.Duration
+}
+
+func (r *RetrieveRequest) WithTimeout(timeout time.Duration) *RetrieveRequest {
+	r.timeout = timeout
+	return r
+}
+
+func (r *RetrieveRequest) Do(ctx context.Context, conversation string) (*response.DataResponse[response.Conversation], error) {
 	resp := new(response.DataResponse[response.Conversation])
 
 	// 构建查询参数
@@ -128,11 +156,11 @@ func (c *Conversation) RetrieveRequest(ctx context.Context, conversation string)
 		return nil, err
 	}
 	req.Header.Add(HeaderContentType, HeaderApplicationJson)
-	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", c.Authorization))
+	req.Header.Add(HeaderAuthorization, fmt.Sprintf("Bearer %s", r.conversation.authorization))
 
 	client := http.DefaultClient
-	if c.Timeout != 0 {
-		client.Timeout = c.Timeout
+	if r.timeout != 0 {
+		client.Timeout = r.timeout
 	}
 
 	httpResp, err := client.Do(req)
